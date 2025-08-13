@@ -14,9 +14,11 @@
     .option { display: block; margin-bottom: 5px; }
     .controls { margin-top: 15px; text-align: center; }
     button { padding: 8px 12px; margin: 5px; border: none; border-radius: 6px; cursor: pointer; background: #f0c040; }
-    #resultCard { margin-top: 20px; background: #fff; padding: 15px; border-radius: 10px; border: 2px solid #ccc; max-width: 500px; margin-left: auto; margin-right: auto; text-align: center; }
+    #resultCard { margin-top: 20px; background: #fff; padding: 15px; border-radius: 10px; border: 2px solid #ccc; max-width: 700px; margin-left: auto; margin-right: auto; text-align: center; }
     #resultCard h2 { margin-top: 0; }
-    .answer-key { font-family: monospace; font-size: 14px; margin-top: 8px; }
+    .answer-key { font-family: monospace; font-size: 14px; margin-top: 8px; text-align: left; white-space: pre-wrap; }
+    #timer { font-size: 20px; font-weight: bold; color: red; text-align: center; margin-bottom: 10px; }
+    .small { font-size: 13px; color:#444; }
   </style>
 </head>
 <body>
@@ -34,10 +36,10 @@
     </div>
 
     <div id="quizContainer" style="display:none;">
+      <div id="timer"></div>
       <form id="quiz"></form>
-      <div class="controls" id="navButtons">
+      <div class="controls">
         <button type="button" id="nextBtn" onclick="nextQuestion()">Next</button>
-        <button type="button" id="submitBtn" onclick="submitQuiz()" style="display:none;">Submit</button>
       </div>
       <div id="resultCard" style="display:none;">
         <h2>Test Result</h2>
@@ -49,6 +51,7 @@
   </div>
 
   <script>
+    // original questions: ans is 'a'.. meaning the 1st option etc.
     const QUESTIONS = [
       {q: 'Principal value of sin⁻¹(√3/2) is:', options: ['π/3','2π/3','π/6','−π/3'], ans: 'a'},
       {q: 'Principal value of cos⁻¹(1/2) is:', options: ['π/3','2π/3','π/6','−π/3'], ans: 'a'},
@@ -72,15 +75,45 @@
       {q: 'Principal value of sin⁻¹(−1) is:', options: ['−π/2','π/2','0','−π'], ans: 'a'}
     ];
 
-    let currentQuestionIndex = 0;
-    let questionOrder = [];
-    let answers = {};
+    // We'll create a preparedQuestions array where each question contains:
+    // { q: ..., options: [ 'opt1', 'opt2', ... ], correct: 'a'/'b'..., correctText: '...' }
+    let preparedQuestions = [];
 
-    function shuffleArray(array) {
-      for (let i = array.length - 1; i > 0; i--) {
+    let shuffledQuestions = [];
+    let currentQuestionIndex = 0;
+    let answers = [];
+    let timerInterval;
+    let timeLeft = 30;
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
+      return arr;
+    }
+
+    // Prepare questions by shuffling options per question and computing the new correct letter
+    function prepareQuestionsArray(originalQs) {
+      return originalQs.map((item) => {
+        // original correct index (0-based)
+        const origCorrectIndex = item.ans.charCodeAt(0) - 97;
+        // pair each option with its original index so we can track which one was originally correct
+        const optionPairs = item.options.map((optText, idx) => ({ text: optText, origIdx: idx }));
+        // shuffle the option pairs
+        shuffleArray(optionPairs);
+        // compute new correct letter & text by finding the pair with origIdx === origCorrectIndex
+        const correctPairIndex = optionPairs.findIndex(p => p.origIdx === origCorrectIndex);
+        const correctLetter = String.fromCharCode(97 + correctPairIndex); // 'a','b',...
+        const correctText = optionPairs[correctPairIndex].text;
+        const optionsTexts = optionPairs.map(p => p.text);
+        return {
+          q: item.q,
+          options: optionsTexts,      // shuffled option texts
+          correct: correctLetter,     // letter in shuffled order
+          correctText: correctText    // the text of correct answer
+        };
+      });
     }
 
     function startTest(){
@@ -93,73 +126,91 @@
       document.getElementById('studentInfoForm').style.display = 'none';
       document.getElementById('quizContainer').style.display = 'block';
 
-      shuffleArray(QUESTIONS);
-      questionOrder = QUESTIONS.map(q => ({...q, options: shuffleOptions(q.options)}));
+      // Prepare and shuffle questions so different students get different order
+      preparedQuestions = prepareQuestionsArray(QUESTIONS);
+      shuffledQuestions = shuffleArray([...preparedQuestions]); // shuffle question order
       currentQuestionIndex = 0;
-      renderQuestion();
+      answers = Array(shuffledQuestions.length).fill(null);
+      showQuestion();
     }
 
-    function shuffleOptions(options){
-      const arr = options.map(o => o);
-      shuffleArray(arr);
-      return arr;
-    }
+    function showQuestion(){
+      clearInterval(timerInterval);
+      timeLeft = 30;
+      document.getElementById('timer').textContent = `Time Left: ${timeLeft}s`;
+      timerInterval = setInterval(()=>{
+        timeLeft--;
+        document.getElementById('timer').textContent = `Time Left: ${timeLeft}s`;
+        if(timeLeft <= 0){
+          clearInterval(timerInterval);
+          nextQuestion();
+        }
+      },1000);
 
-    function renderQuestion(){
       const quiz = document.getElementById('quiz');
       quiz.innerHTML = '';
-      const qData = questionOrder[currentQuestionIndex];
-      let html = `<fieldset><legend>Q${currentQuestionIndex+1}) ${qData.q}</legend>`;
-      qData.options.forEach((opt, i) => {
-        const optLetter = String.fromCharCode(97 + i); // 'a','b','c','d'
-        const disabled = answers[currentQuestionIndex] ? 'disabled' : '';
-        const checked = answers[currentQuestionIndex] === optLetter ? 'checked' : '';
-        html += `<label class='option'><input type='radio' name='q${currentQuestionIndex}' value='${optLetter}' ${checked} ${disabled}> (${optLetter}) ${opt}</label>`;
+      const qObj = shuffledQuestions[currentQuestionIndex];
+      // we already shuffled options when preparing the questions
+      let html = `<fieldset><legend>Q${currentQuestionIndex+1}) ${qObj.q}</legend>`;
+      qObj.options.forEach((opt, i) => {
+        const optLetter = String.fromCharCode(97 + i); // 'a','b',...
+        // prevent changing answers later by disabling after submission (handled in submit)
+        html += `<label class='option'><input type='radio' name='q' value='${optLetter}'> (${optLetter}) ${opt}</label>`;
       });
       html += '</fieldset>';
       quiz.innerHTML = html;
-
-      document.getElementById('nextBtn').style.display = currentQuestionIndex < questionOrder.length - 1 ? 'inline-block' : 'none';
-      document.getElementById('submitBtn').style.display = currentQuestionIndex === questionOrder.length - 1 ? 'inline-block' : 'none';
+      document.getElementById('nextBtn').textContent = currentQuestionIndex === shuffledQuestions.length - 1 ? 'Submit' : 'Next';
     }
 
     function nextQuestion(){
-      const selected = document.querySelector(`input[name='q${currentQuestionIndex}']:checked`);
-      if(!selected){
-        alert('Please select an answer before proceeding.');
+      const sel = document.querySelector("input[name='q']:checked");
+      if(sel){
+        answers[currentQuestionIndex] = sel.value;
+      }
+      if(currentQuestionIndex === shuffledQuestions.length - 1){
+        submitQuiz();
         return;
       }
-      answers[currentQuestionIndex] = selected.value;
       currentQuestionIndex++;
-      renderQuestion();
+      showQuestion();
     }
 
     function submitQuiz(){
-      const selected = document.querySelector(`input[name='q${currentQuestionIndex}']:checked`);
-      if(!selected){
-        alert('Please select an answer before submitting.');
-        return;
-      }
-      answers[currentQuestionIndex] = selected.value;
+      clearInterval(timerInterval);
       let score = 0;
       let attempted = 0;
-      questionOrder.forEach((q, idx) => {
-        if(answers[idx]){
+      shuffledQuestions.forEach((item, idx) => {
+        if(answers[idx] !== null){
           attempted++;
-          const correctIndex = q.options.indexOf(q.options.find(o => o === QUESTIONS.find(qq => qq.q === q.q).options[QUESTIONS.find(qq => qq.q === q.q).ans.charCodeAt(0)-97]));
-          const correctLetter = String.fromCharCode(97 + correctIndex);
-          if(answers[idx] === correctLetter) score++;
+          if(answers[idx] === item.correct) score++;
         }
       });
-      document.getElementById('resultCard').style.display = 'block';
-      document.getElementById('studentDetails').textContent = `Roll No: ${document.getElementById('rollNo').value} | Roll Code: ${document.getElementById('rollCode').value}`;
-      document.getElementById('scoreDetails').textContent = `Score: ${score} / ${questionOrder.length} | Attempted: ${attempted}`;
-      document.getElementById('key').textContent = 'Answer Key: ' + questionOrder.map((q,i) => {
-        const correctIndex = q.options.indexOf(q.options.find(o => o === QUESTIONS.find(qq => qq.q === q.q).options[QUESTIONS.find(qq => qq.q === q.q).ans.charCodeAt(0)-97]));
-        return `${i+1}:${String.fromCharCode(65 + correctIndex)}`;
-      }).join('  ');
+
+      // hide quiz and controls
       document.getElementById('quiz').style.display = 'none';
-      document.getElementById('navButtons').style.display = 'none';
+      document.getElementById('nextBtn').style.display = 'none';
+      document.getElementById('timer').style.display = 'none';
+
+      // show result
+      document.getElementById('resultCard').style.display = 'block';
+      document.getElementById('studentDetails').textContent = `Roll No: ${document.getElementById('rollNo').value.trim()} | Roll Code: ${document.getElementById('rollCode').value.trim()}`;
+      document.getElementById('scoreDetails').textContent = `Score: ${score} / ${shuffledQuestions.length} | Attempted: ${attempted}`;
+
+      // Build answer key showing letter AND correct option text (in the shuffled order)
+      const keyLines = shuffledQuestions.map((q, i) => {
+        const letter = q.correct.toUpperCase();
+        return `${i+1}: ${letter} — ${q.correctText}`;
+      });
+
+      // Also optionally show what student answered (if attempted), helpful for review
+      const answeredLines = shuffledQuestions.map((q, i) => {
+        const studentAns = answers[i] ? answers[i].toUpperCase() : '-';
+        const correctLetter = q.correct.toUpperCase();
+        const marker = (answers[i] && answers[i] === q.correct) ? '✓' : (answers[i] ? '✗' : '');
+        return `${i+1}: Your: ${studentAns} | Correct: ${correctLetter} | ${marker}`;
+      });
+
+      document.getElementById('key').textContent = 'Answer Key (Letter — Option):\n' + keyLines.join('\n') + '\n\nYour answers summary:\n' + answeredLines.join('\n');
     }
   </script>
 </body>
