@@ -35,9 +35,9 @@
 
     <div id="quizContainer" style="display:none;">
       <form id="quiz"></form>
-      <div class="controls">
-        <button type="button" onclick="submitQuiz()">Submit</button>
-        <button type="button" onclick="window.print()">Print / Save PDF</button>
+      <div class="controls" id="navButtons">
+        <button type="button" id="nextBtn" onclick="nextQuestion()">Next</button>
+        <button type="button" id="submitBtn" onclick="submitQuiz()" style="display:none;">Submit</button>
       </div>
       <div id="resultCard" style="display:none;">
         <h2>Test Result</h2>
@@ -72,17 +72,15 @@
       {q: 'Principal value of sin⁻¹(−1) is:', options: ['−π/2','π/2','0','−π'], ans: 'a'}
     ];
 
+    let currentQuestionIndex = 0;
+    let questionOrder = [];
+    let answers = {};
+
     function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
-    }
-
-    function shuffleOptions(options) {
-      let arr = options.map((opt, idx) => ({opt, label: String.fromCharCode(97+idx)}));
-      shuffleArray(arr);
-      return arr;
     }
 
     function startTest(){
@@ -94,43 +92,74 @@
       }
       document.getElementById('studentInfoForm').style.display = 'none';
       document.getElementById('quizContainer').style.display = 'block';
+
       shuffleArray(QUESTIONS);
-      renderQuiz(QUESTIONS);
+      questionOrder = QUESTIONS.map(q => ({...q, options: shuffleOptions(q.options)}));
+      currentQuestionIndex = 0;
+      renderQuestion();
     }
 
-    function renderQuiz(questionSet){
+    function shuffleOptions(options){
+      const arr = options.map(o => o);
+      shuffleArray(arr);
+      return arr;
+    }
+
+    function renderQuestion(){
       const quiz = document.getElementById('quiz');
       quiz.innerHTML = '';
-      questionSet.forEach((item, idx) => {
-        const qNo = idx+1;
-        const shuffledOpts = shuffleOptions(item.options);
-        let html = `<fieldset><legend>${qNo}) ${item.q}</legend>`;
-        shuffledOpts.forEach(({opt, label}) => {
-          html += `<label class='option'><input type='radio' name='q${qNo}' value='${label}'> (${label}) ${opt}</label>`;
-        });
-        html += '</fieldset>';
-        quiz.innerHTML += html;
-        item.shuffledAnswer = shuffledOpts.find(o => o.label === 'a').label;
+      const qData = questionOrder[currentQuestionIndex];
+      let html = `<fieldset><legend>Q${currentQuestionIndex+1}) ${qData.q}</legend>`;
+      qData.options.forEach((opt, i) => {
+        const optLetter = String.fromCharCode(97 + i); // 'a','b','c','d'
+        const disabled = answers[currentQuestionIndex] ? 'disabled' : '';
+        const checked = answers[currentQuestionIndex] === optLetter ? 'checked' : '';
+        html += `<label class='option'><input type='radio' name='q${currentQuestionIndex}' value='${optLetter}' ${checked} ${disabled}> (${optLetter}) ${opt}</label>`;
       });
+      html += '</fieldset>';
+      quiz.innerHTML = html;
+
+      document.getElementById('nextBtn').style.display = currentQuestionIndex < questionOrder.length - 1 ? 'inline-block' : 'none';
+      document.getElementById('submitBtn').style.display = currentQuestionIndex === questionOrder.length - 1 ? 'inline-block' : 'none';
+    }
+
+    function nextQuestion(){
+      const selected = document.querySelector(`input[name='q${currentQuestionIndex}']:checked`);
+      if(!selected){
+        alert('Please select an answer before proceeding.');
+        return;
+      }
+      answers[currentQuestionIndex] = selected.value;
+      currentQuestionIndex++;
+      renderQuestion();
     }
 
     function submitQuiz(){
-      const rollNo = document.getElementById('rollNo').value.trim();
-      const rollCode = document.getElementById('rollCode').value.trim();
+      const selected = document.querySelector(`input[name='q${currentQuestionIndex}']:checked`);
+      if(!selected){
+        alert('Please select an answer before submitting.');
+        return;
+      }
+      answers[currentQuestionIndex] = selected.value;
       let score = 0;
       let attempted = 0;
-      QUESTIONS.forEach((item, idx) => {
-        const qNo = idx+1;
-        const sel = document.querySelector(`input[name='q${qNo}']:checked`);
-        if(sel){
+      questionOrder.forEach((q, idx) => {
+        if(answers[idx]){
           attempted++;
-          if(sel.value === item.shuffledAnswer) score++;
+          const correctIndex = q.options.indexOf(q.options.find(o => o === QUESTIONS.find(qq => qq.q === q.q).options[QUESTIONS.find(qq => qq.q === q.q).ans.charCodeAt(0)-97]));
+          const correctLetter = String.fromCharCode(97 + correctIndex);
+          if(answers[idx] === correctLetter) score++;
         }
       });
       document.getElementById('resultCard').style.display = 'block';
-      document.getElementById('studentDetails').textContent = `Roll No: ${rollNo} | Roll Code: ${rollCode}`;
-      document.getElementById('scoreDetails').textContent = `Score: ${score} / ${QUESTIONS.length} | Attempted: ${attempted}`;
-      document.getElementById('key').textContent = 'Answer Key: ' + QUESTIONS.map((q,i) => `${i+1}:${q.shuffledAnswer.toUpperCase()}`).join('  ');
+      document.getElementById('studentDetails').textContent = `Roll No: ${document.getElementById('rollNo').value} | Roll Code: ${document.getElementById('rollCode').value}`;
+      document.getElementById('scoreDetails').textContent = `Score: ${score} / ${questionOrder.length} | Attempted: ${attempted}`;
+      document.getElementById('key').textContent = 'Answer Key: ' + questionOrder.map((q,i) => {
+        const correctIndex = q.options.indexOf(q.options.find(o => o === QUESTIONS.find(qq => qq.q === q.q).options[QUESTIONS.find(qq => qq.q === q.q).ans.charCodeAt(0)-97]));
+        return `${i+1}:${String.fromCharCode(65 + correctIndex)}`;
+      }).join('  ');
+      document.getElementById('quiz').style.display = 'none';
+      document.getElementById('navButtons').style.display = 'none';
     }
   </script>
 </body>
