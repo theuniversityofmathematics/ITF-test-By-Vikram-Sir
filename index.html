@@ -4,6 +4,14 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Combined Quizzes — The University Of Mathematics</title>
+
+<!-- ===== CONFIG: paste your links here (already filled with yours) ===== -->
+<script>
+  const GOOGLE_SHEET_WEB_APP = "https://script.google.com/macros/s/AKfycbyoaHk245G-A1mjcdk7fOqIdWbF1hY9dFe0rgIjMbzPgSDTR6AEm8GYqKWZlR55VGRO/exec";
+  const GOOGLE_SHEET_VIEW_URL = "https://docs.google.com/spreadsheets/d/1C6Bnw2_wgkXXKs1sI9knZRPKK3fRtNmXhRi9wQB5nsQ/edit?usp=sharing";
+</script>
+<!-- =================================================================== -->
+
 <style>
   body { font-family: Arial, sans-serif; background:#fffbe6; margin:0; padding:18px; }
   .wrap { max-width:1000px; margin:0 auto; }
@@ -16,8 +24,8 @@
   .option { display:block; margin:8px 0; }
   #resultCard { background:#fff; border:2px solid #ccc; padding:12px; border-radius:8px; margin-top:12px; }
   .answer-summary { font-family:monospace; white-space:pre-wrap; text-align:left; margin-top:10px; }
-  .correct { color:#117a37; font-weight:700; } /* green */
-  .wrong { color:#c62828; font-weight:700; }   /* red */
+  .correct { color:#117a37; font-weight:700; }
+  .wrong { color:#c62828; font-weight:700; }
   table { width:100%; border-collapse:collapse; margin-top:12px; background:#fff; }
   th, td { border:1px solid #aaa; padding:8px; text-align:center; }
   .controls { text-align:center; margin-top:10px; }
@@ -29,7 +37,7 @@
 <div class="wrap">
   <h1>The University Of Mathematics (Maths by Vikram Sir)</h1>
 
-  <!-- Password screen (no hints displayed) -->
+  <!-- Password screen -->
   <div id="passwordScreen">
     <fieldset>
       <legend>Access</legend>
@@ -71,13 +79,12 @@
     <fieldset>
       <legend>Admin — Stored Results (local)</legend>
       <table>
-        <thead><tr><th>Name</th><th>Quiz Code</th><th>Test</th><th>Score</th><th>Date</th></tr></thead>
+        <thead><tr><th>Name</th><th>Test</th><th>Score</th><th>Date</th><th>Quiz Code</th></tr></thead>
         <tbody id="adminTable"></tbody>
       </table>
       <div class="controls" style="margin-top:10px;">
         <button onclick="downloadLocalCSV()">Download Local CSV</button>
         <button onclick="clearLocalResults()">Clear Local Results</button>
-        <!-- open Google Sheet link (replace below URL variable) -->
         <a id="openSheetBtn" class="link-button" target="_blank" href="#">Open Google Sheet</a>
       </div>
     </fieldset>
@@ -86,19 +93,34 @@
 
 <script>
 /* ============================
-   CONFIG — replace these URLs
-   ============================
-   - SERVER_WEBAPP_URL: paste the Web App URL from your deployed Google Apps Script (doPost)
-   - GOOGLE_SHEET_URL: paste your Google Sheet URL (optional) so admin can quickly open it
-*/
-const SERVER_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyoaHk245G-A1mjcdk7fOqIdWbF1hY9dFe0rgIjMbzPgSDTR6AEm8GYqKWZlR55VGRO/execRL"; // <-- REPLACE
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1C6Bnw2_wgkXXKs1sI9knZRPKK3fRtNmXhRi9wQB5nsQ/edit?usp=sharingT_URL"; // <-- REPLACE
-
-/* -------------------------
-   Question banks
-   ------------------------- */
+   QUIZ BANKS (with shuffle)
+   ============================ */
 const BANK = {
-  "200": { title:"Inverse Trig (Principal Value)", questions: [
+  "1508": { title:"Indian GK — Freedom Movement (20 Q, shuffled)", questions: [
+    {q:"In which year did India attain independence?", options:["1942","1945","1947","1950"], ans:"c"},
+    {q:"Who gave the call of 'Quit India' in 1942?", options:["Mahatma Gandhi","Jawaharlal Nehru","Sardar Patel","Subhas Chandra Bose"], ans:"a"},
+    {q:"The Jallianwala Bagh massacre took place in:", options:["1915","1919","1921","1930"], ans:"b"},
+    {q:"Who founded the Indian National Army (INA)?", options:["Lala Lajpat Rai","Rashbehari Bose","Bhagat Singh","Subhas C. Bose"], ans:"b"},
+    {q:"Which act is called the 'Montagu–Chelmsford Reforms'?", options:["Indian Councils Act 1909","Government of India Act 1919","Rowlatt Act 1919","GOI Act 1935"], ans:"b"},
+    {q:"Who wrote 'Hind Swaraj'?", options:["B. R. Ambedkar","Bal Gangadhar Tilak","M. K. Gandhi","Rabindranath Tagore"], ans:"c"},
+    {q:"Who was known as the 'Iron Man of India'?", options:["Bhagat Singh","Sardar Patel","Lala Lajpat Rai","Bipin Chandra Pal"], ans:"b"},
+    {q:"Who gave the slogan 'Swaraj is my birthright'?", options:["Tilak","Gandhi","Nehru","Bose"], ans:"a"},
+    {q:"Who formed the Forward Bloc in 1939?", options:["Nehru","Patel","Bose","Tilak"], ans:"c"},
+    {q:"Where was the Non-Cooperation Movement launched?", options:["Bombay","Calcutta","Ahmedabad","Delhi"], ans:"b"},
+    {q:"Kakori Conspiracy (1925) is associated with:", options:["HSRA","HRA","INA","Anushilan Samiti"], ans:"b"},
+    {q:"The Lahore Session (1929) of INC declared:", options:["Swaraj","Dominion Status","Purna Swaraj","Separate Electorates"], ans:"c"},
+    {q:"The Dandi March started on:", options:["Jan 26, 1930","Mar 12, 1930","Apr 6, 1930","Aug 9, 1942"], ans:"b"},
+    {q:"Simon Commission came to India in:", options:["1927","1928","1929","1930"], ans:"b"},
+    {q:"Who authored 'Anand Math'?", options:["Bankim Chandra Chatterjee","Sarojini Naidu","Aurobindo Ghosh","Premchand"], ans:"a"},
+    {q:"Bhagat Singh, Rajguru and Sukhdev were executed in:", options:["1929","1930","1931","1932"], ans:"c"},
+    {q:"The 'Poona Pact' (1932) was signed between:", options:["Gandhi & Jinnah","Gandhi & Ambedkar","Nehru & Ambedkar","Patel & Ambedkar"], ans:"b"},
+    {q:"Who was the first Governor-General of independent India?", options:["Mountbatten","C. Rajagopalachari","Nehru","Patel"], ans:"a"},
+    {q:"Who composed 'Vande Mataram'?", options:["Bankim Chandra Chatterjee","Rabindranath Tagore","Iqbal","Subramania Bharati"], ans:"a"},
+    {q:"Champaran Satyagraha (1917) was related to:", options:["Textile workers","Indigo planters","Salt tax","Railway strike"], ans:"b"},
+  ]},
+
+  /* You can add back your math banks here if you like (codes 200, 100, 300) */
+  "200": { title:"Inverse Trig (Principal Value)", questions:[
     {q:'Principal value of sin⁻¹(√3/2) is:', options:['π/3','2π/3','π/6','−π/3'], ans:'a'},
     {q:'Principal value of cos⁻¹(1/2) is:', options:['π/3','2π/3','π/6','−π/3'], ans:'a'},
     {q:'Principal value of tan⁻¹(1) is:', options:['π/4','3π/4','−π/4','π/2'], ans:'a'},
@@ -120,81 +142,15 @@ const BANK = {
     {q:'Principal value of cot⁻¹(0) is:', options:['π/2','0','π','−π/2'], ans:'a'},
     {q:'Principal value of sin⁻¹(−1) is:', options:['−π/2','π/2','0','−π'], ans:'a'}
   ]},
-  "100": { title:"Straight Line (Class 11 Basic)", questions: [
-    {q:'The slope of the line 2x – 3y + 5 = 0 is:', options:['2/3','3/2','-2/3','-3/2'], ans:'c'},
-    {q:'The equation of x-axis is:', options:['x = 0','y = 0','y = x','x + y = 0'], ans:'b'},
-    {q:'If a line passes through (0,0) and (2,3), its slope is:', options:['3/2','2/3','-3/2','-2/3'], ans:'a'},
-    {q:'Slope of the line perpendicular to y = -2x + 5 is:', options:['1/2','2','-1/2','-2'], ans:'a'},
-    {q:'The point (a,0) lies on:', options:['x-axis','y-axis','line y = x','line y = -x'], ans:'a'},
-    {q:'The distance between points (3,4) and (0,0) is:', options:['5','7','4','3'], ans:'a'},
-    {q:'The equation y – 2 = 0 represents:', options:['x-axis','y-axis','Horizontal line','Vertical line'], ans:'c'},
-    {q:'The equation of line with slope m and passing through (x₁, y₁) is:', options:['y - y₁ = m(x - x₁)','y = mx + c','x/x₁ + y/y₁ = 1','None'], ans:'a'},
-    {q:'The slope of vertical line is:', options:['0','∞','1','-1'], ans:'b'},
-    {q:'The intercepts of 3x + 2y = 6 are:', options:['(2,0) and (0,3)','(0,2) and (3,0)','(0,3) and (2,0)','(0,0) and (3,2)'], ans:'c'},
-    {q:'If a line passes through (1,2) and is parallel to x-axis, its equation is:', options:['y = 1','x = 1','y = 2','x = 2'], ans:'c'},
-    {q:'The slope of the line 4x – 5y + 7 = 0 is:', options:['5/4','-5/4','4/5','-4/5'], ans:'c'},
-    {q:'The line passing through (0,3) and slope 2 is:', options:['y = 2x + 3','y = 3x + 2','y = 2x - 3','y = -2x + 3'], ans:'a'},
-    {q:'The perpendicular distance from (2,3) to x-axis is:', options:['2','3','5','1'], ans:'b'},
-    {q:'The slope of the line making angle 45° with x-axis is:', options:['1','-1','√3','1/√3'], ans:'a'},
-    {q:'The equation 2x + 3y = 6 has slope:', options:['-2/3','2/3','3/2','-3/2'], ans:'a'},
-    {q:'The distance between (5,0) and (0,12) is:', options:['13','12','5','17'], ans:'a'},
-    {q:'The slope of line parallel to 5x + 2y – 7 = 0 is:', options:['-5/2','5/2','-2/5','2/5'], ans:'a'},
-    {q:'The slope of line perpendicular to 3x – y + 4 = 0 is:', options:['3','-1/3','-3','1/3'], ans:'d'},
-    {q:'The equation of y-axis is:', options:['y = 0','x = 0','x + y = 0','y = x'], ans:'b'}
-  ]},
-  "300": { title:"Integration by Substitution (Basic)", questions: [
-    {q:`∫ 2x cos(x^2) dx = ?`, options:['sin(x^2)+C','-sin(x^2)+C','cos(x^2)+C','-cos(x^2)+C'], ans:'a'},
-    {q:`∫ dx / (x ln x) = ?`, options:['ln|ln x| + C','1/ln x + C','ln|x| + C','x ln x + C'], ans:'a'},
-    {q:`∫ cos(3x)/sin(3x) dx = ?`, options:['(1/3) ln|sin(3x)| + C','ln|tan(3x)| + C','(1/3) ln|tan(3x)| + C','- (1/3) ln|cos(3x)| + C'], ans:'a'},
-    {q:`∫ e^{2x} dx = ?`, options:['(1/2)e^{2x} + C','e^{2x} + C','2 e^{2x} + C','ln(e^{2x}) + C'], ans:'a'},
-    {q:`∫ dx / sqrt(1-x^2) = ?`, options:['arcsin x + C','arccos x + C','arctan x + C','ln|x| + C'], ans:'a'},
-    {q:`∫ dx/(x^2+9) = ?`, options:['(1/3) arctan(x/3) + C','arctan(x/3)+C','ln|x^2+9| + C','x/(x^2+9) + C'], ans:'a'},
-    {q:`∫ (sec^2 5x)/3 dx = ?`, options:['(1/15) tan(5x) + C','(1/3) tan(5x) + C','(1/5) tan(5x)+C','5 tan(5x)+C'], ans:'a'},
-    {q:`∫ 2x/(x^2+4) dx = ?`, options:['ln(x^2+4) + C','(1/2) ln(x^2+4) + C','ln|x| + C','arctan(x/2)+C'], ans:'a'},
-    {q:`∫ x e^{x^2} dx = ?`, options:['(1/2)e^{x^2} + C','e^{x^2}+C','ln(e^{x^2}) + C','(1/x) e^{x^2} + C'], ans:'a'},
-    {q:`∫ sin^3 x cos x dx = ?`, options:['sin^4 x /4 + C','cos^4 x /4 + C','sin^4 x + C','-cos^4 x + C'], ans:'a'},
-    {q:`∫ dx/( x sqrt(x^2 -1) ) = ?`, options:['sec^{-1} x + C','cos^{-1} x + C','sin^{-1} x + C','tan^{-1} x + C'], ans:'a'},
-    {q:`∫ cos^2 x dx = ?`, options:['x/2 + (sin2x)/4 + C','x/2 - (sin2x)/4 + C','x + sin2x/2 + C','x/4 + sin x + C'], ans:'a'},
-    {q:`∫ 3x^2/(x^3+1)^2 dx = ?`, options:['-1/(x^3+1) + C','ln|x^3+1| + C','1/(x^3+1) + C','-ln|x^3+1| + C'], ans:'a'},
-    {q:`∫ dx / sqrt(x^2+4) = ?`, options:['ln|x+sqrt(x^2+4)| + C','arctan(x/2)+C','arcsinh(x/2)+C','arccosh(x/2)+C'], ans:'a'},
-    {q:`∫ (arctan x)/(1+x^2) dx = ?`, options:['(arctan x)^2 /2 + C','ln(1+x^2)+C','(1/2)ln(1+x^2)+C','(arctan x)^2 + C'], ans:'a'},
-    {q:`∫ dx/(1+x^2)^2 = ?`, options:['x/(2(1+x^2)) + (1/2) arctan x + C','x/(1+x^2) + arctan x + C','arctan x + C','x/2 + C'], ans:'a'},
-    {q:`∫ dx/(x^2 sqrt(x^2-1)) = ?`, options:['- sqrt(x^2-1)/x + C','sec^{-1} x + C','- sec^{-1} x + C','sin^{-1} x + C'], ans:'a'},
-    {q:`∫ e^x sin x dx = ?`, options:['(e^x (sin x - cos x))/2 + C','(e^x (sin x + cos x))/2 + C','e^x sin x + C','e^x cos x + C'], ans:'a'},
-    {q:`∫ dx / sqrt(4 - x^2) = ?`, options:['arcsin(x/2) + C','arccos(x/2) + C','arctan(x/2) + C','ln|x| + C'], ans:'a'},
-    {q:`∫ x / sqrt(1 - x^4) dx = ?`, options:['(1/2) arcsin(x^2) + C','arcsin x + C','arctan(x^2) + C','(1/4) arcsin(x^2) + C'], ans:'a'}
-  ]},
-  "1508": { title:"Indian GK — Freedom Movement & Freedom Fighters", questions: [
-    {q:"Who is known as the “Father of the Nation” in India?", options:["Mahatma Gandhi","Subhas Chandra Bose","Bhagat Singh","Jawaharlal Nehru"], ans:"a"},
-    {q:"When did India gain independence from British rule?", options:["26 January 1950","15 August 1947","12 March 1930","2 October 1947"], ans:"b"},
-    {q:"Who gave the slogan “Inquilab Zindabad”?", options:["Bhagat Singh","Lala Lajpat Rai","Bal Gangadhar Tilak","Sardar Patel"], ans:"a"},
-    {q:"In which year was the Non-Cooperation Movement launched?", options:["1920","1919","1930","1942"], ans:"a"},
-    {q:"The Dandi March started in which year?", options:["1929","1930","1931","1932"], ans:"b"},
-    {q:"Who composed the song “Vande Mataram”?", options:["Rabindranath Tagore","Bankim Chandra Chattopadhyay","Sarojini Naidu","Subramania Bharati"], ans:"b"},
-    {q:"Who is known as the “Iron Man of India”?", options:["Sardar Vallabhbhai Patel","Lala Lajpat Rai","Bal Gangadhar Tilak","Rajendra Prasad"], ans:"a"},
-    {q:"Who was the first woman President of the Indian National Congress?", options:["Annie Besant","Sarojini Naidu","Vijayalakshmi Pandit","Kasturba Gandhi"], ans:"a"},
-    {q:"Who was the last Governor-General of independent India?", options:["Lord Mountbatten","Rajendra Prasad","C. Rajagopalachari","Jawaharlal Nehru"], ans:"c"},
-    {q:"The “Quit India Movement” was launched in which year?", options:["1930","1942","1940","1920"], ans:"b"},
-    {q:"Who founded the Indian National Army (INA)?", options:["Subhas Chandra Bose","Rash Behari Bose","Bhagat Singh","Chandrashekhar Azad"], ans:"b"},
-    {q:"Who was known as “Netaji”?", options:["Subhas Chandra Bose","Bhagat Singh","Mahatma Gandhi","Sardar Patel"], ans:"a"},
-    {q:"Who was the first Prime Minister of independent India?", options:["Jawaharlal Nehru","Rajendra Prasad","Sardar Patel","Lal Bahadur Shastri"], ans:"a"},
-    {q:"Which movement is also known as the “August Movement”?", options:["Quit India Movement","Non-Cooperation Movement","Civil Disobedience Movement","Swadeshi Movement"], ans:"a"},
-    {q:"Who assassinated General Dyer, responsible for the Jallianwala Bagh massacre?", options:["Bhagat Singh","Udham Singh","Rajguru","Sukhdev"], ans:"b"},
-    {q:"Who was the first Indian to demand “Swaraj” in the Congress session?", options:["Dadabhai Naoroji","Bal Gangadhar Tilak","Gopal Krishna Gokhale","Bipin Chandra Pal"], ans:"b"},
-    {q:"When did the Jallianwala Bagh massacre take place?", options:["1917","1919","1920","1921"], ans:"b"},
-    {q:"Who started the newspaper “Young India”?", options:["Mahatma Gandhi","Bal Gangadhar Tilak","Bhagat Singh","Subhas Chandra Bose"], ans:"a"},
-    {q:"Which freedom fighter is known as “Punjab Kesari”?", options:["Lala Lajpat Rai","Sardar Patel","Udham Singh","Bhagat Singh"], ans:"a"},
-    {q:"Who wrote the book “Hind Swaraj”?", options:["Jawaharlal Nehru","Mahatma Gandhi","Subhas Chandra Bose","Bal Gangadhar Tilak"], ans:"b"}
-  ]}
 };
 
 /* -------------------------
    runtime state
    ------------------------- */
-let chosenCode = '';      // "200", "100", "300", "1508"
-let chosenQuiz = null;    // BANK[chosenCode]
-let prepared = [];        // prepared questions with shuffled options & computed correct letter
-let qList = [];           // order of questions (shuffled)
+let chosenCode = '';
+let chosenQuiz = null;
+let prepared = [];
+let qList = [];
 let current = 0;
 let studentAnswers = [];
 let studentName = '';
@@ -237,9 +193,11 @@ function onPasswordEnter(){
   if(!BANK[p]){ alert('Wrong password'); return; }
   chosenCode = p;
   chosenQuiz = BANK[p];
-  // prepare and shuffle
+
+  // Prepare: shuffle options and pick a randomized order of all questions
   prepared = prepareQuestions(chosenQuiz.questions);
-  qList = shuffle(prepared.slice()); // different order per student
+  qList = shuffle(prepared.slice()); // full set shuffled
+
   document.getElementById('passwordScreen').style.display = 'none';
   document.getElementById('nameScreen').style.display = 'block';
 }
@@ -263,7 +221,7 @@ function startQuiz(){
    ------------------------- */
 function renderQuestion(){
   clearInterval(timerId);
-  timeLeft = 30;
+  timeLeft = 30; // 30s per question
   document.getElementById('timer').textContent = `Time Left: ${timeLeft}s`;
   timerId = setInterval(()=>{
     timeLeft--;
@@ -275,7 +233,6 @@ function renderQuestion(){
   const box = document.getElementById('questionBox');
   box.innerHTML = '';
   let html = `<fieldset><legend>Q${current+1}) ${escapeHtml(q.q)}</legend>`;
-  // options already shuffled inside prepareQuestions
   q.options.forEach((opt,i)=>{
     const letter = String.fromCharCode(97 + i);
     html += `<label class="option"><input type="radio" name="opt" value="${letter}"> (${letter}) ${escapeHtml(opt)}</label>`;
@@ -329,39 +286,33 @@ function submitQuiz(){
   document.getElementById('scoreInfo').textContent = `Score: ${score} / ${qList.length}   |   Attempted: ${attempted}`;
   document.getElementById('summary').innerHTML = html;
 
-  // prepare record
-  const record = { name: studentName, score: `${score}/${qList.length}`, date: new Date().toLocaleString(), quizCode: chosenCode, test: chosenQuiz.title };
-
-  // save to server (Sheet) and local (for admin view)
-  saveToServer(record).then(success=>{
-    // always also update local storage so admin screen can show immediately
+  // save to Google Sheet (server), also store locally for admin local view
+  const record = {
+    name: studentName,
+    test: chosenQuiz.title,
+    score,
+    date: new Date().toLocaleString(),
+    quizCode: chosenCode
+  };
+  saveToGoogleSheet(record).then(()=>{
+    saveLocally(record);
+  }).catch(()=>{
     saveLocally(record);
   });
 }
 
 /* -------------------------
-   save: try server (Google Apps Script doPost), store only Name | Score | Date | Quiz Code
+   save: Google Apps Script doPost + localStorage
    ------------------------- */
-async function saveToServer(record){
-  if(!SERVER_WEBAPP_URL || SERVER_WEBAPP_URL.includes('YOUR_WEB_APP_URL')) {
-    console.warn('SERVER_WEBAPP_URL not set or left as placeholder — skipping server save.');
-    return false;
-  }
-  try{
-    const payload = { name: record.name, score: record.score, date: record.date, quizCode: record.quizCode };
-    const response = await fetch(SERVER_WEBAPP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if(!response.ok) throw new Error('Network response not ok');
-    const data = await response.json().catch(()=>null);
-    console.log('Saved to Google Sheet:', data);
-    return true;
-  } catch(err){
-    console.error('Error saving to server:', err);
-    return false;
-  }
+async function saveToGoogleSheet(record){
+  if(!GOOGLE_SHEET_WEB_APP){ throw new Error('No Web App URL'); }
+  const resp = await fetch(GOOGLE_SHEET_WEB_APP, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name:record.name, score:record.score, date:record.date, quizCode:record.quizCode })
+  });
+  if(!resp.ok) throw new Error('Network error');
+  return true;
 }
 
 function saveLocally(record){
@@ -369,9 +320,7 @@ function saveLocally(record){
     const list = JSON.parse(localStorage.getItem('quizResults') || '[]');
     list.push(record);
     localStorage.setItem('quizResults', JSON.stringify(list));
-  }catch(e){
-    console.error('Local save failed', e);
-  }
+  }catch(e){ console.error('Local save failed', e); }
 }
 
 /* -------------------------
@@ -380,10 +329,9 @@ function saveLocally(record){
 function openAdmin(){
   document.getElementById('passwordScreen').style.display = 'none';
   document.getElementById('adminScreen').style.display = 'block';
-  // set Google Sheet open button
   const openBtn = document.getElementById('openSheetBtn');
-  if(GOOGLE_SHEET_URL && !GOOGLE_SHEET_URL.includes('YOUR_SHEET_URL')) {
-    openBtn.href = GOOGLE_SHEET_URL;
+  if(GOOGLE_SHEET_VIEW_URL){
+    openBtn.href = GOOGLE_SHEET_VIEW_URL;
     openBtn.style.display = 'inline-block';
   } else {
     openBtn.style.display = 'none';
@@ -397,20 +345,16 @@ function refreshAdminTable(){
   tbody.innerHTML = '';
   list.forEach(r=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(r.name)}</td><td>${escapeHtml(String(r.quizCode))}</td><td>${escapeHtml(r.test||'')}</td><td>${escapeHtml(String(r.score))}</td><td>${escapeHtml(r.date)}</td>`;
+    tr.innerHTML = `<td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.test)}</td><td>${escapeHtml(String(r.score))}</td><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.quizCode||'')}</td>`;
     tbody.appendChild(tr);
   });
 }
 
 function downloadLocalCSV(){
   const list = JSON.parse(localStorage.getItem('quizResults') || '[]');
-  let csv = 'Name,Quiz Code,Test,Score,Date\n';
+  let csv = 'Name,Test,Score,Date,Quiz Code\n';
   list.forEach(r=>{
-    csv += `"${(r.name||'').replace(/"/g,'""')}",`+
-           `"${(r.quizCode||'').toString().replace(/"/g,'""')}",`+
-           `"${(r.test||'').replace(/"/g,'""')}",`+
-           `"${(r.score||'').toString().replace(/"/g,'""')}",`+
-           `"${(r.date||'').replace(/"/g,'""')}"\n`;
+    csv += `"${(r.name||'').replace(/"/g,'""')}","${(r.test||'').replace(/"/g,'""')}",${r.score},"${(r.date||'').replace(/"/g,'""')}","${(r.quizCode||'').replace(/"/g,'""')}"\n`;
   });
   const blob = new Blob([csv], { type:'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -448,8 +392,4 @@ document.addEventListener('keydown', (e)=>{
 });
 </script>
 </body>
-</html>"""
-path = "/mnt/data/combined_quizzes_gsheet.html"
-with open(path, "w", encoding="utf-8") as f:
-    f.write(html_content)
-path
+</html>
