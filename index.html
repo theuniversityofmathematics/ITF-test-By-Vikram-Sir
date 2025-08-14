@@ -4,14 +4,6 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Combined Quizzes — The University Of Mathematics</title>
-
-<!-- ===== CONFIG: paste your links here (already filled with yours) ===== -->
-<script>
-  const GOOGLE_SHEET_WEB_APP = "https://script.google.com/macros/s/AKfycbyoaHk245G-A1mjcdk7fOqIdWbF1hY9dFe0rgIjMbzPgSDTR6AEm8GYqKWZlR55VGRO/exec";
-  const GOOGLE_SHEET_VIEW_URL = "https://docs.google.com/spreadsheets/d/1C6Bnw2_wgkXXKs1sI9knZRPKK3fRtNmXhRi9wQB5nsQ/edit?usp=sharing";
-</script>
-<!-- =================================================================== -->
-
 <style>
   body { font-family: Arial, sans-serif; background:#fffbe6; margin:0; padding:18px; }
   .wrap { max-width:1000px; margin:0 auto; }
@@ -46,7 +38,7 @@
     </fieldset>
   </div>
 
-  <!-- Name input for student -->
+  <!-- Name input -->
   <div id="nameScreen" style="display:none;">
     <fieldset>
       <legend>Student Details</legend>
@@ -55,14 +47,13 @@
     </fieldset>
   </div>
 
-  <!-- Quiz area -->
+  <!-- Quiz -->
   <div id="quizScreen" style="display:none;">
     <div id="timer"></div>
     <div id="questionBox"></div>
     <div class="controls">
       <button id="nextBtn" onclick="onNext()">Next</button>
     </div>
-
     <div id="resultCard" style="display:none;">
       <h2>Test Result</h2>
       <p id="studentInfo" class="small"></p>
@@ -74,12 +65,12 @@
     </div>
   </div>
 
-  <!-- Admin screen -->
+  <!-- Admin -->
   <div id="adminScreen" style="display:none;">
     <fieldset>
       <legend>Admin — Stored Results (local)</legend>
       <table>
-        <thead><tr><th>Name</th><th>Test</th><th>Score</th><th>Date</th><th>Quiz Code</th></tr></thead>
+        <thead><tr><th>Name</th><th>Quiz Code</th><th>Score</th><th>Date</th></tr></thead>
         <tbody id="adminTable"></tbody>
       </table>
       <div class="controls" style="margin-top:10px;">
@@ -92,304 +83,184 @@
 </div>
 
 <script>
-/* ============================
-   QUIZ BANKS (with shuffle)
-   ============================ */
-const BANK = {
-  "1508": { title:"Indian GK — Freedom Movement (20 Q, shuffled)", questions: [
-    {q:"In which year did India attain independence?", options:["1942","1945","1947","1950"], ans:"c"},
-    {q:"Who gave the call of 'Quit India' in 1942?", options:["Mahatma Gandhi","Jawaharlal Nehru","Sardar Patel","Subhas Chandra Bose"], ans:"a"},
-    {q:"The Jallianwala Bagh massacre took place in:", options:["1915","1919","1921","1930"], ans:"b"},
-    {q:"Who founded the Indian National Army (INA)?", options:["Lala Lajpat Rai","Rashbehari Bose","Bhagat Singh","Subhas C. Bose"], ans:"b"},
-    {q:"Which act is called the 'Montagu–Chelmsford Reforms'?", options:["Indian Councils Act 1909","Government of India Act 1919","Rowlatt Act 1919","GOI Act 1935"], ans:"b"},
-    {q:"Who wrote 'Hind Swaraj'?", options:["B. R. Ambedkar","Bal Gangadhar Tilak","M. K. Gandhi","Rabindranath Tagore"], ans:"c"},
-    {q:"Who was known as the 'Iron Man of India'?", options:["Bhagat Singh","Sardar Patel","Lala Lajpat Rai","Bipin Chandra Pal"], ans:"b"},
-    {q:"Who gave the slogan 'Swaraj is my birthright'?", options:["Tilak","Gandhi","Nehru","Bose"], ans:"a"},
-    {q:"Who formed the Forward Bloc in 1939?", options:["Nehru","Patel","Bose","Tilak"], ans:"c"},
-    {q:"Where was the Non-Cooperation Movement launched?", options:["Bombay","Calcutta","Ahmedabad","Delhi"], ans:"b"},
-    {q:"Kakori Conspiracy (1925) is associated with:", options:["HSRA","HRA","INA","Anushilan Samiti"], ans:"b"},
-    {q:"The Lahore Session (1929) of INC declared:", options:["Swaraj","Dominion Status","Purna Swaraj","Separate Electorates"], ans:"c"},
-    {q:"The Dandi March started on:", options:["Jan 26, 1930","Mar 12, 1930","Apr 6, 1930","Aug 9, 1942"], ans:"b"},
-    {q:"Simon Commission came to India in:", options:["1927","1928","1929","1930"], ans:"b"},
-    {q:"Who authored 'Anand Math'?", options:["Bankim Chandra Chatterjee","Sarojini Naidu","Aurobindo Ghosh","Premchand"], ans:"a"},
-    {q:"Bhagat Singh, Rajguru and Sukhdev were executed in:", options:["1929","1930","1931","1932"], ans:"c"},
-    {q:"The 'Poona Pact' (1932) was signed between:", options:["Gandhi & Jinnah","Gandhi & Ambedkar","Nehru & Ambedkar","Patel & Ambedkar"], ans:"b"},
-    {q:"Who was the first Governor-General of independent India?", options:["Mountbatten","C. Rajagopalachari","Nehru","Patel"], ans:"a"},
-    {q:"Who composed 'Vande Mataram'?", options:["Bankim Chandra Chatterjee","Rabindranath Tagore","Iqbal","Subramania Bharati"], ans:"a"},
-    {q:"Champaran Satyagraha (1917) was related to:", options:["Textile workers","Indigo planters","Salt tax","Railway strike"], ans:"b"},
-  ]},
+const SERVER_WEBAPP_URL = "https://script.google.com/macros/s/AKfycby0TOM4NqTTIJnLi_kh1gPY6VStck66t4MpLYLqM5XcyGe_n7ZwCDr7jxScDC4eoh2-/exec";
+const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1q073kqP1dLG2Lqbyu4dBNwtYCzq61mVHsl5B37npT6Y/edit?usp=sharing";
 
-  /* You can add back your math banks here if you like (codes 200, 100, 300) */
-  "200": { title:"Inverse Trig (Principal Value)", questions:[
-    {q:'Principal value of sin⁻¹(√3/2) is:', options:['π/3','2π/3','π/6','−π/3'], ans:'a'},
-    {q:'Principal value of cos⁻¹(1/2) is:', options:['π/3','2π/3','π/6','−π/3'], ans:'a'},
-    {q:'Principal value of tan⁻¹(1) is:', options:['π/4','3π/4','−π/4','π/2'], ans:'a'},
-    {q:'Principal value of cot⁻¹(1) is:', options:['π/4','3π/4','π/2','−π/4'], ans:'a'},
-    {q:'Principal value of sec⁻¹(2) is:', options:['π/3','2π/3','π/6','−π/3'], ans:'a'},
-    {q:'Principal value of csc⁻¹(2) is:', options:['π/6','5π/6','π/3','−π/6'], ans:'a'},
-    {q:'Principal value of sin⁻¹(−1/2) is:', options:['−π/6','π/6','5π/6','−5π/6'], ans:'a'},
-    {q:'Principal value of cos⁻¹(−1/2) is:', options:['2π/3','4π/3','π/3','−π/3'], ans:'a'},
-    {q:'Principal value of tan⁻¹(−1) is:', options:['−π/4','3π/4','π/4','−3π/4'], ans:'a'},
-    {q:'Principal value of sin⁻¹(0) is:', options:['0','π/2','π','−π/2'], ans:'a'},
-    {q:'Principal value of cos⁻¹(0) is:', options:['π/2','0','π','−π/2'], ans:'a'},
-    {q:'Principal value of tan⁻¹(√3) is:', options:['π/3','π/6','2π/3','−π/3'], ans:'a'},
-    {q:'Principal value of cot⁻¹(√3) is:', options:['π/6','π/3','5π/6','−π/6'], ans:'a'},
-    {q:'Principal value of sec⁻¹(−2) is:', options:['2π/3','−π/3','π/3','−2π/3'], ans:'a'},
-    {q:'Principal value of csc⁻¹(−2) is:', options:['−π/6','π/6','5π/6','−5π/6'], ans:'a'},
-    {q:'Principal value of sin⁻¹(1) is:', options:['π/2','−π/2','0','π'], ans:'a'},
-    {q:'Principal value of cos⁻¹(1) is:', options:['0','π','π/2','−π/2'], ans:'a'},
-    {q:'Principal value of tan⁻¹(0) is:', options:['0','π/2','π','−π/2'], ans:'a'},
-    {q:'Principal value of cot⁻¹(0) is:', options:['π/2','0','π','−π/2'], ans:'a'},
-    {q:'Principal value of sin⁻¹(−1) is:', options:['−π/2','π/2','0','−π'], ans:'a'}
+const BANK = {
+  "100": { title:"Straight Line (Class 11)", questions:[
+    {q:"Slope of 2x-3y+5=0?", options:["2/3","3/2","-2/3","-3/2"], ans:"c"},
+    {q:"Equation of x-axis?", options:["x=0","y=0","y=x","x+y=0"], ans:"b"},
+    {q:"Line through (0,0)&(2,3) slope?", options:["3/2","2/3","-3/2","-2/3"], ans:"a"},
+    {q:"Slope perpendicular to y=-2x+5?", options:["1/2","2","-1/2","-2"], ans:"a"},
+    {q:"Point (a,0) lies on?", options:["x-axis","y-axis","y=x","y=-x"], ans:"a"},
+    {q:"Distance (3,4) to (0,0)?", options:["5","7","4","3"], ans:"a"},
+    {q:"Equation y-2=0 represents?", options:["x-axis","y-axis","Horizontal","Vertical"], ans:"c"},
+    {q:"Line with slope m through (x1,y1)?", options:["y-y1=m(x-x1)","y=mx+c","x/x1 + y/y1=1","None"], ans:"a"},
+    {q:"Slope of vertical line?", options:["0","∞","1","-1"], ans:"b"},
+    {q:"Intercepts of 3x+2y=6?", options:["(2,0)&(0,3)","(0,2)&(3,0)","(0,3)&(2,0)","(0,0)&(3,2)"], ans:"c"},
+    {q:"Midpoint of (1,2)&(3,4)?", options:["(2,3)","(1,1)","(2,2)","(3,2)"], ans:"a"},
+    {q:"Line through (1,2) slope 3?", options:["y=3x-1","y=3x+2","y=2x+3","y=-3x+5"], ans:"b"},
+    {q:"Line parallel y=2x+5 slope?", options:["2","1/2","-2","-1/2"], ans:"a"},
+    {q:"Line perpendicular y=5x+1 passes (0,1)?", options:["y=-1/5 x+1","y=5x+1","y=-5x+1","y=1/5x+1"], ans:"a"},
+    {q:"Distance (1,1) to line x+y-3=0?", options:["1","√2","3","2"], ans:"b"},
+    {q:"Equation bisector of x & y axes?", options:["y=x","y=-x","x+y=1","x-y=0"], ans:"a"},
+    {q:"Line with intercepts (2,0)&(0,3) equation?", options:["x/2+y/3=1","y=2x+3","x+y=5","y=-2x+3"], ans:"a"},
+    {q:"Distance between y=2x+1 & y=2x-3?", options:["2","3","4","5"], ans:"b"},
+    {q:"Slope-intercept 3x-4y+12=0?", options:["3/4","-3/4","4/3","-4/3"], ans:"b"},
+    {q:"y=mx+c through (2,3)&(4,7) m?", options:["1","2","3","4"], ans:"b"}
   ]},
+  "200": { title:"Inverse Trigonometry (Class 12)", questions:[
+    {q:"Principal value sin⁻¹(√3/2)?", options:["π/3","2π/3","π/6","-π/3"], ans:"a"},
+    {q:"Principal value cos⁻¹(1/2)?", options:["π/3","2π/3","π/6","-π/3"], ans:"a"},
+    {q:"Principal value tan⁻¹(1)?", options:["π/4","3π/4","-π/4","π/2"], ans:"a"},
+    {q:"Principal value cot⁻¹(1)?", options:["π/4","3π/4","π/2","-π/4"], ans:"a"},
+    {q:"Principal value sec⁻¹(2)?", options:["π/3","2π/3","π/6","-π/3"], ans:"a"},
+    {q:"Principal value csc⁻¹(2)?", options:["π/6","5π/6","π/3","-π/6"], ans:"a"},
+    {q:"Principal value sin⁻¹(-1/2)?", options:["-π/6","π/6","5π/6","-5π/6"], ans:"a"},
+    {q:"Principal value cos⁻¹(-1/2)?", options:["2π/3","4π/3","π/3","-π/3"], ans:"a"},
+    {q:"Principal value tan⁻¹(-1)?", options:["-π/4","3π/4","π/4","-3π/4"], ans:"a"},
+    {q:"Principal value sin⁻¹(0)?", options:["0","π/2","π","-π/2"], ans:"a"},
+    {q:"Principal value cos⁻¹(0)?", options:["π/2","0","π","-π/2"], ans:"a"},
+    {q:"Principal value tan⁻¹(√3)?", options:["π/3","π/6","2π/3","-π/3"], ans:"a"},
+    {q:"Principal value cot⁻¹(√3)?", options:["π/6","π/3","5π/6","-π/6"], ans:"a"},
+    {q:"Principal value sec⁻¹(-2)?", options:["2π/3","-π/3","π/3","-2π/3"], ans:"a"},
+    {q:"Principal value csc⁻¹(-2)?", options:["-π/6","π/6","5π/6","-5π/6"], ans:"a"},
+    {q:"Principal value sin⁻¹(1)?", options:["π/2","-π/2","0","π"], ans:"a"},
+    {q:"Principal value cos⁻¹(-1)?", options:["π","0","π/2","-π/2"], ans:"a"},
+    {q:"Principal value tan⁻¹(0)?", options:["0","π/2","π","-π/2"], ans:"a"},
+    {q:"Principal value sin⁻¹(-1)?", options:["-π/2","π/2","0","-π"], ans:"a"},
+    {q:"Principal value cos⁻¹(1)?", options:["0","π","π/2","-π/2"], ans:"a"}
+  ]},
+  "1508": { title:"Indian Freedom GK", questions:[
+    {q:"First PM of India?", options:["Jawaharlal Nehru","Gandhi","Sardar Patel","Lal Bahadur"], ans:"a"},
+    {q:"Year of Independence?", options:["1947","1950","1942","1930"], ans:"a"},
+    {q:"Founder of INC?", options:["A.O.Hume","Tilak","Gokhale","Lajpat Rai"], ans:"a"},
+    {q:"Leader of Salt March?", options:["Gandhi","Nehru","Azad","Tilak"], ans:"a"},
+    {q:"First President of India?", options:["Rajendra Prasad","Nehru","Gandhi","Patel"], ans:"a"},
+    {q:"Who gave Quit India call?", options:["Gandhi","Nehru","Azad","Lal Bahadur"], ans:"a"},
+    {q:"Leader of 1857 revolt?", options:["Rani Laxmi Bai","Gandhi","Nehru","Tilak"], ans:"a"},
+    {q:"Father of Indian Constitution?", options:["B.R.Ambedkar","Nehru","Patel","Gandhi"], ans:"a"},
+    {q:"Freedom fighter from Bengal?", options:["Surya Sen","Tilak","Gandhi","Azad"], ans:"a"},
+    {q:"Founder of Azad Hind Fauj?", options:["Subhash Chandra Bose","Nehru","Gandhi","Tilak"], ans:"a"},
+    {q:"Popularized Swadeshi Movement?", options:["Bal Gangadhar Tilak","Gandhi","Nehru","Patel"], ans:"a"},
+    {q:"Leader of Bardoli Satyagraha?", options:["Sardar Patel","Gandhi","Nehru","Azad"], ans:"a"},
+    {q:"First woman president INC?", options:["Annie Besant","Sarojini Naidu","Vijaya Lakshmi","Indira Gandhi"], ans:"a"},
+    {q:"Who wrote Young India?", options:["Gandhi","Tilak","Nehru","Patel"], ans:"a"},
+    {q:"Freedom fighter Maharashtra?", options:["Tilak","Patel","Nehru","Gandhi"], ans:"a"},
+    {q:"Leader Champaran Satyagraha?", options:["Gandhi","Tilak","Nehru","Azad"], ans:"a"},
+    {q:"Launched Non-Cooperation Movement?", options:["Gandhi","Nehru","Azad","Tilak"], ans:"a"},
+    {q:"Executed at Lahore?", options:["Bhagat Singh","Gandhi","Nehru","Patel"], ans:"a"},
+    {q:"Leader Home Rule League?", options:["Tilak","Gandhi","Nehru","Patel"], ans:"a"},
+    {q:"Presided over Lahore Congress 1929?", options:["Jawaharlal Nehru","Tilak","Gandhi","Azad"], ans:"a"}
+  ]},
+  "300": { title:"Integration by Substitution", questions:[
+    {q:"∫2x cos(x²) dx=?", options:["sin(x²)+C","-sin(x²)+C","cos(x²)+C","-cos(x²)+C"], ans:"a"},
+    {q:"∫ dx/(x ln x)?", options:["ln|ln x|+C","1/ln x +C","ln|x|+C","x ln x+C"], ans:"a"},
+    {q:"∫ x e^(x²) dx?", options:["1/2 e^(x²)+C","e^(x²)+C","ln(e^(x²))+C","1/x e^(x²)+C"], ans:"a"},
+    {q:"∫ 1/(1+x²) dx?", options:["arctan x +C","arcsin x +C","arccos x +C","ln x +C"], ans:"a"},
+    {q:"∫ sin(3x) dx?", options:["-1/3 cos3x+C","1/3 cos3x+C","1/3 sin3x+C","-1/3 sin3x+C"], ans:"a"},
+    {q:"∫ cos(5x) dx?", options:["1/5 sin5x+C","-1/5 sin5x+C","cos5x+C","-cos5x+C"], ans:"a"},
+    {q:"∫ 3x² dx?", options:["x³+C","3x²+C","x³/3+C","3x+C"], ans:"a"},
+    {q:"∫ e^(2x) dx?", options:["1/2 e^(2x)+C","e^(2x)+C","2 e^(2x)+C","ln e^(2x)+C"], ans:"a"},
+    {q:"∫ dx/√x?", options:["2√x+C","√x+C","1/√x +C","ln x +C"], ans:"a"},
+    {q:"∫ dx/(x√(ln x))?", options:["2√ln x +C","√ln x+C","1/√ln x +C","ln ln x+C"], ans:"a"},
+    {q:"∫ tan x dx?", options:["-ln|cosx|+C","ln|cosx|+C","ln|sinx|+C","-ln|sinx|+C"], ans:"a"},
+    {q:"∫ cot x dx?", options:["ln|sinx|+C","-ln|sinx|+C","ln|cosx|+C","-ln|cosx|+C"], ans:"a"},
+    {q:"∫ sec² x dx?", options:["tan x +C","cot x +C","sec x +C","csc x +C"], ans:"a"},
+    {q:"∫ csc² x dx?", options:["-cot x +C","tan x +C","csc x +C","sec x +C"], ans:"a"},
+    {q:"∫ dx/(x²+1)?", options:["arctan x +C","arcsin x +C","arccos x +C","ln x +C"], ans:"a"},
+    {q:"∫ e^(x²) * 2x dx?", options:["e^(x²)+C","1/2 e^(x²)+C","ln e^(x²)+C","2 e^(x²)+C"], ans:"a"},
+    {q:"∫ sin²x dx?", options:["x/2 - sin2x/4 +C","x/2 + sin2x/4 +C","-x/2 + sin2x/4 +C","x+ C"], ans:"a"},
+    {q:"∫ cos²x dx?", options:["x/2 + sin2x/4 +C","x/2 - sin2x/4 +C","-x/2 + sin2x/4 +C","x+ C"], ans:"a"},
+    {q:"∫ dx/√(1−x²)?", options:["arcsin x +C","arccos x +C","arctan x +C","ln x +C"], ans:"a"},
+    {q:"∫ dx/(1−x²)?", options:["1/2 ln|(1+x)/(1−x)| +C","ln|(1+x)/(1−x)| +C","arctan x +C","arcsin x +C"], ans:"a"}
+  ]}
 };
 
-/* -------------------------
-   runtime state
-   ------------------------- */
-let chosenCode = '';
-let chosenQuiz = null;
-let prepared = [];
-let qList = [];
-let current = 0;
-let studentAnswers = [];
-let studentName = '';
-let timerId = null;
-let timeLeft = 30;
+let selectedQuiz = null, studentName="", currentQ=0, score=0, answers=[], timerInterval;
 
-/* -------------------------
-   helpers
-   ------------------------- */
-function shuffle(arr){
-  for(let i=arr.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]]=[arr[j],arr[i]];
-  }
-  return arr;
-}
-
-function prepareQuestions(raw){
-  return raw.map(item=>{
-    const origCorrectIdx = item.ans.charCodeAt(0)-97;
-    const pairs = item.options.map((t,i)=>({text:t, orig:i}));
-    shuffle(pairs);
-    const correctAfter = pairs.findIndex(p=>p.orig===origCorrectIdx);
-    return {
-      q: item.q,
-      options: pairs.map(p=>p.text),
-      correct: String.fromCharCode(97 + correctAfter),
-      correctText: pairs[correctAfter].text
-    };
-  });
-}
-
-/* -------------------------
-   password -> choose quiz
-   ------------------------- */
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function onPasswordEnter(){
-  const p = document.getElementById('accessPwd').value.trim();
-  if(!p){ alert('Enter password'); return; }
-  if(p === '9110'){ openAdmin(); return; }
-  if(!BANK[p]){ alert('Wrong password'); return; }
-  chosenCode = p;
-  chosenQuiz = BANK[p];
-
-  // Prepare: shuffle options and pick a randomized order of all questions
-  prepared = prepareQuestions(chosenQuiz.questions);
-  qList = shuffle(prepared.slice()); // full set shuffled
-
-  document.getElementById('passwordScreen').style.display = 'none';
-  document.getElementById('nameScreen').style.display = 'block';
+  const pwd=document.getElementById("accessPwd").value;
+  if(pwd==="100" || pwd==="200" || pwd==="1508" || pwd==="300"){
+    selectedQuiz=BANK[pwd]; document.getElementById("passwordScreen").style.display="none";
+    document.getElementById("nameScreen").style.display="block";
+  } else if(pwd==="9110"){document.getElementById("passwordScreen").style.display="none";
+    document.getElementById("adminScreen").style.display="block"; loadAdmin();}
+  else{alert("Invalid password");}
 }
-
-/* -------------------------
-   start quiz
-   ------------------------- */
 function startQuiz(){
-  const nm = document.getElementById('studentName').value.trim();
-  if(!nm){ alert('Enter name'); return; }
-  studentName = nm;
-  studentAnswers = Array(qList.length).fill(null);
-  current = 0;
-  document.getElementById('nameScreen').style.display = 'none';
-  document.getElementById('quizScreen').style.display = 'block';
-  renderQuestion();
+  studentName=document.getElementById("studentName").value.trim();
+  if(!studentName){alert("Enter name"); return;}
+  document.getElementById("nameScreen").style.display="none";
+  document.getElementById("quizScreen").style.display="block";
+  currentQ=0; score=0; answers=[]; showQuestion(); startTimer();
 }
-
-/* -------------------------
-   show question, start timer
-   ------------------------- */
-function renderQuestion(){
-  clearInterval(timerId);
-  timeLeft = 30; // 30s per question
-  document.getElementById('timer').textContent = `Time Left: ${timeLeft}s`;
-  timerId = setInterval(()=>{
-    timeLeft--;
-    document.getElementById('timer').textContent = `Time Left: ${timeLeft}s`;
-    if(timeLeft <= 0){ clearInterval(timerId); onNext(); }
-  }, 1000);
-
-  const q = qList[current];
-  const box = document.getElementById('questionBox');
-  box.innerHTML = '';
-  let html = `<fieldset><legend>Q${current+1}) ${escapeHtml(q.q)}</legend>`;
-  q.options.forEach((opt,i)=>{
-    const letter = String.fromCharCode(97 + i);
-    html += `<label class="option"><input type="radio" name="opt" value="${letter}"> (${letter}) ${escapeHtml(opt)}</label>`;
-  });
-  html += `</fieldset>`;
-  box.innerHTML = html;
-  document.getElementById('nextBtn').textContent = current === qList.length-1 ? 'Submit' : 'Next';
+function showQuestion(){
+  if(currentQ>=selectedQuiz.questions.length){finishQuiz(); return;}
+  let q=selectedQuiz.questions[currentQ];
+  let opts=shuffle(q.options.slice());
+  let html=`<fieldset><legend>Q${currentQ+1}: ${q.q}</legend>`;
+  opts.forEach((o,i)=>{html+=`<label class="option"><input type="radio" name="opt" value="${o}">${o}</label>`;});
+  html+="</fieldset>"; document.getElementById("questionBox").innerHTML=html;
 }
-
-/* -------------------------
-   next or submit
-   ------------------------- */
 function onNext(){
-  const sel = document.querySelector('input[name="opt"]:checked');
-  if(sel) studentAnswers[current] = sel.value;
-  if(current === qList.length-1){ submitQuiz(); return; }
-  current++;
-  renderQuestion();
+  let sel=document.querySelector('input[name="opt"]:checked');
+  if(!sel){alert("Select option"); return;}
+  answers.push(sel.value);
+  let correct=selectedQuiz.questions[currentQ].options[selectedQuiz.questions[currentQ].ans.charCodeAt(0)-97];
+  if(sel.value===correct) score++;
+  currentQ++; showQuestion();
 }
-
-/* -------------------------
-   submit & show summary
-   ------------------------- */
-function submitQuiz(){
-  clearInterval(timerId);
-  // compute score and HTML summary with colored marks
-  let score = 0, attempted = 0;
-  let html = '<div><strong>Answer Summary</strong></div><br>';
-  qList.forEach((q, idx)=>{
-    const sLetter = studentAnswers[idx];
-    const sText = sLetter ? q.options[sLetter.charCodeAt(0)-97] : null;
-    const cLetter = q.correct;
-    const cText = q.correctText;
-    const correct = sLetter && sLetter === cLetter;
-    if(sLetter) attempted++;
-    if(correct) score++;
-    const studentPart = !sLetter ? `<span>Not Attempted</span>` :
-      (correct ? `<span class="correct">(${sLetter.toUpperCase()}) ${escapeHtml(sText)}</span>` :
-                 `<span class="wrong">(${sLetter.toUpperCase()}) ${escapeHtml(sText)}</span>`);
-    const correctPart = `<span class="correct">(${cLetter.toUpperCase()}) ${escapeHtml(cText)}</span>`;
-    html += `<div><strong>Q${idx+1}.</strong> ${escapeHtml(q.q)}<br>Your: ${studentPart} &nbsp; | &nbsp; Correct: ${correctPart}</div><br>`;
-  });
-
-  // reveal result
-  document.getElementById('questionBox').style.display = 'none';
-  document.getElementById('nextBtn').style.display = 'none';
-  document.getElementById('timer').style.display = 'none';
-  const res = document.getElementById('resultCard');
-  res.style.display = 'block';
-  document.getElementById('studentInfo').textContent = `Name: ${studentName}   |   Test: ${chosenQuiz.title}`;
-  document.getElementById('scoreInfo').textContent = `Score: ${score} / ${qList.length}   |   Attempted: ${attempted}`;
-  document.getElementById('summary').innerHTML = html;
-
-  // save to Google Sheet (server), also store locally for admin local view
-  const record = {
-    name: studentName,
-    test: chosenQuiz.title,
-    score,
-    date: new Date().toLocaleString(),
-    quizCode: chosenCode
-  };
-  saveToGoogleSheet(record).then(()=>{
-    saveLocally(record);
-  }).catch(()=>{
-    saveLocally(record);
-  });
-}
-
-/* -------------------------
-   save: Google Apps Script doPost + localStorage
-   ------------------------- */
-async function saveToGoogleSheet(record){
-  if(!GOOGLE_SHEET_WEB_APP){ throw new Error('No Web App URL'); }
-  const resp = await fetch(GOOGLE_SHEET_WEB_APP, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name:record.name, score:record.score, date:record.date, quizCode:record.quizCode })
-  });
-  if(!resp.ok) throw new Error('Network error');
-  return true;
-}
-
-function saveLocally(record){
-  try{
-    const list = JSON.parse(localStorage.getItem('quizResults') || '[]');
-    list.push(record);
-    localStorage.setItem('quizResults', JSON.stringify(list));
-  }catch(e){ console.error('Local save failed', e); }
-}
-
-/* -------------------------
-   Admin UI (local results)
-   ------------------------- */
-function openAdmin(){
-  document.getElementById('passwordScreen').style.display = 'none';
-  document.getElementById('adminScreen').style.display = 'block';
-  const openBtn = document.getElementById('openSheetBtn');
-  if(GOOGLE_SHEET_VIEW_URL){
-    openBtn.href = GOOGLE_SHEET_VIEW_URL;
-    openBtn.style.display = 'inline-block';
-  } else {
-    openBtn.style.display = 'none';
+function finishQuiz(){
+  clearInterval(timerInterval);
+  document.getElementById("questionBox").style.display="none";
+  document.getElementById("nextBtn").style.display="none";
+  let summary="", qlist=selectedQuiz.questions;
+  for(let i=0;i<qlist.length;i++){
+    let correct=qlist[i].options[qlist[i].ans.charCodeAt(0)-97];
+    summary+=`Q${i+1}: ${qlist[i].q}\nYour answer: ${answers[i]} => ${answers[i]===correct ? "Correct":"Wrong"}\nCorrect: ${correct}\n\n`;
   }
-  refreshAdminTable();
+  document.getElementById("studentInfo").innerText=`Name: ${studentName}\nQuiz: ${selectedQuiz.title}`;
+  document.getElementById("scoreInfo").innerText=`Score: ${score} / ${qlist.length}`;
+  document.getElementById("summary").innerText=summary;
+  document.getElementById("resultCard").style.display="block";
+  saveToSheet();
+}
+function startTimer(){
+  let total=600; //10 minutes
+  timerInterval=setInterval(()=>{let m=Math.floor(total/60), s=total%60;
+    document.getElementById("timer").innerText=`Time left: ${m}m ${s}s`; total--; if(total<0){clearInterval(timerInterval); finishQuiz();}},1000);
+}
+function printResult(){window.print();}
+
+// Local storage admin
+function saveToSheet(){
+  const date=new Date().toLocaleString();
+  let data={Name:studentName,QuizCode:selectedQuiz.title,Score:score,Date:date};
+  let stored=JSON.parse(localStorage.getItem("quizResults")||"[]"); stored.push(data);
+  localStorage.setItem("quizResults",JSON.stringify(stored));
+  //Send to Google Sheet
+  fetch(SERVER_WEBAPP_URL+"?name="+encodeURIComponent(studentName)+"&quiz="+encodeURIComponent(selectedQuiz.title)+"&score="+score+"&date="+encodeURIComponent(date))
+  .then(r=>console.log("Saved to sheet")).catch(e=>console.log("Sheet save failed",e));
 }
 
-function refreshAdminTable(){
-  const tbody = document.getElementById('adminTable');
-  const list = JSON.parse(localStorage.getItem('quizResults') || '[]');
-  tbody.innerHTML = '';
-  list.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.test)}</td><td>${escapeHtml(String(r.score))}</td><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.quizCode||'')}</td>`;
-    tbody.appendChild(tr);
-  });
+function loadAdmin(){
+  document.getElementById("openSheetBtn").href=GOOGLE_SHEET_URL;
+  let stored=JSON.parse(localStorage.getItem("quizResults")||"[]"); 
+  let tbody=""; stored.forEach(r=>{tbody+=`<tr><td>${r.Name}</td><td>${r.QuizCode}</td><td>${r.Score}</td><td>${r.Date}</td></tr>`;});
+  document.getElementById("adminTable").innerHTML=tbody;
 }
 
 function downloadLocalCSV(){
-  const list = JSON.parse(localStorage.getItem('quizResults') || '[]');
-  let csv = 'Name,Test,Score,Date,Quiz Code\n';
-  list.forEach(r=>{
-    csv += `"${(r.name||'').replace(/"/g,'""')}","${(r.test||'').replace(/"/g,'""')}",${r.score},"${(r.date||'').replace(/"/g,'""')}","${(r.quizCode||'').replace(/"/g,'""')}"\n`;
-  });
-  const blob = new Blob([csv], { type:'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'quiz_results_local.csv';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  let stored=JSON.parse(localStorage.getItem("quizResults")||"[]");
+  if(!stored.length){alert("No data"); return;}
+  let csv="Name,Quiz,Score,Date\n";
+  stored.forEach(r=>{csv+=`${r.Name},${r.QuizCode},${r.Score},${r.Date}\n`;});
+  let a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv); a.download="quiz_results.csv"; a.click();
 }
 
-function clearLocalResults(){
-  if(!confirm('Clear all local results? This cannot be undone.')) return;
-  localStorage.removeItem('quizResults');
-  refreshAdminTable();
-}
-
-/* -------------------------
-   small utilities
-   ------------------------- */
-function escapeHtml(s){ if(s===null||s===undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function printResult(){ window.print(); }
-
-/* -------------------------
-   keyboard enter support
-   ------------------------- */
-document.addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter'){
-    const pwdVisible = document.getElementById('passwordScreen').style.display !== 'none';
-    const nameVisible = document.getElementById('nameScreen').style.display !== 'none';
-    if(pwdVisible){ onPasswordEnter(); e.preventDefault(); }
-    else if(nameVisible){ startQuiz(); e.preventDefault(); }
-  }
-});
+function clearLocalResults(){if(confirm("Clear local data?")){localStorage.removeItem("quizResults"); loadAdmin();}}
 </script>
 </body>
 </html>
