@@ -16,8 +16,6 @@
   .option { display:block; margin:8px 0; }
   #resultCard { background:#fff; border:2px solid #ccc; padding:12px; border-radius:8px; margin-top:12px; }
   .answer-summary { font-family:monospace; white-space:pre-wrap; text-align:left; margin-top:10px; }
-  .correct { color:#117a37; font-weight:700; }
-  .wrong { color:#c62828; font-weight:700; }
   table { width:100%; border-collapse:collapse; margin-top:12px; background:#fff; }
   th, td { border:1px solid #aaa; padding:8px; text-align:center; }
   .controls { text-align:center; margin-top:10px; }
@@ -70,7 +68,7 @@
     <fieldset>
       <legend>Admin — Stored Results (local)</legend>
       <table>
-        <thead><tr><th>Name</th><th>Quiz Code</th><th>Score</th><th>Date</th></tr></thead>
+        <thead><tr><th>Name</th><th>Quiz</th><th>Score</th><th>Date</th></tr></thead>
         <tbody id="adminTable"></tbody>
       </table>
       <div class="controls" style="margin-top:10px;">
@@ -83,10 +81,41 @@
 </div>
 
 <script>
+// ====== CONFIG ======
 const SERVER_WEBAPP_URL = "https://script.google.com/macros/s/AKfycby0TOM4NqTTIJnLi_kh1gPY6VStck66t4MpLYLqM5XcyGe_n7ZwCDr7jxScDC4eoh2-/exec";
 const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1q073kqP1dLG2Lqbyu4dBNwtYCzq61mVHsl5B37npT6Y/edit?usp=sharing";
 
+// Sets quiz time window (IST/local): August 15, 2025, 7:45 PM to 8:00 PM
+const SETS_START = new Date("2025-08-15T19:45:00");
+const SETS_END   = new Date("2025-08-15T20:00:00");
+
+// ====== QUESTION BANK ======
 const BANK = {
+  // NEW: Sets (password 150)
+  "150": { title:"Sets (Class 11)", questions:[
+    {q:"If A={1,2,3} and B={2,3,4}, A∩B=?", options:["{2,3}","{1,4}","{1,2}","{3,4}"], ans:"a"},
+    {q:"If A={1,2}, B={2,3}, A∪B=?", options:["{1,2,3}","{2}","{1,3}","{1,2}"], ans:"a"},
+    {q:"n(∅) =", options:["0","1","∞","Not defined"], ans:"a"},
+    {q:"If U={1,2,3,4,5}, A={2,3}, A'?", options:["{1,4,5}","{2,3}","{3,4,5}","{1,2}"], ans:"a"},
+    {q:"Set with one element is called?", options:["Singleton","Null","Finite","Infinite"], ans:"a"},
+    {q:"If A={1,2}, B={2,3}, A−B=?", options:["{1}","{2}","{3}","∅"], ans:"a"},
+    {q:"n({a,e,i,o,u}) =", options:["5","4","3","2"], ans:"a"},
+    {q:"If A⊆B and B⊆A, then A and B are?", options:["Equal","Disjoint","Null","Finite"], ans:"a"},
+    {q:"If A={1,2}, P(A) has how many elements?", options:["4","2","3","1"], ans:"a"},
+    {q:"If n(A)=3, then n(P(A)) =", options:["8","6","3","9"], ans:"a"},
+    {q:"If A∩B=∅, then A and B are?", options:["Disjoint","Equal","Finite","Infinite"], ans:"a"},
+    {q:"n({∅}) =", options:["1","0","2","∞"], ans:"a"},
+    {q:"{x: x is even natural ≤10} =", options:["{2,4,6,8,10}","{1,3,5,7,9}","{0,2,4}","{2,4}"], ans:"a"},
+    {q:"If A={1,2,3}, n(A×A) =", options:["9","6","3","8"], ans:"a"},
+    {q:"If A={1}, B={1,2}, then A⊆B?", options:["True","False","Not defined","Can't say"], ans:"a"},
+    {q:"n(∅) =", options:["0","n(A)","1","∞"], ans:"c"},
+    {q:"If A={1,2}, B={3,4}, then A∩B=?", options:["∅","{1,3}","{2,4}","{1,4}"], ans:"a"},
+    {q:"Universal set means?", options:["Set containing all objects","Set with 1 element","Null set","Subset"], ans:"a"},
+    {q:"If A={a,b}, then P(A) =", options:["{∅,{a},{b},{a,b}}","{a,b}","∅","{a}"], ans:"a"},
+    {q:"n({{1,2}}) =", options:["1","2","3","0"], ans:"a"}
+  ]},
+
+  // Straight Line (password 100) — SAME as your file
   "100": { title:"Straight Line (Class 11)", questions:[
     {q:"Slope of 2x-3y+5=0?", options:["2/3","3/2","-2/3","-3/2"], ans:"c"},
     {q:"Equation of x-axis?", options:["x=0","y=0","y=x","x+y=0"], ans:"b"},
@@ -109,6 +138,8 @@ const BANK = {
     {q:"Slope-intercept 3x-4y+12=0?", options:["3/4","-3/4","4/3","-4/3"], ans:"b"},
     {q:"y=mx+c through (2,3)&(4,7) m?", options:["1","2","3","4"], ans:"b"}
   ]},
+
+  // Inverse Trigonometry (password 200) — SAME as your file
   "200": { title:"Inverse Trigonometry (Class 12)", questions:[
     {q:"Principal value sin⁻¹(√3/2)?", options:["π/3","2π/3","π/6","-π/3"], ans:"a"},
     {q:"Principal value cos⁻¹(1/2)?", options:["π/3","2π/3","π/6","-π/3"], ans:"a"},
@@ -131,6 +162,8 @@ const BANK = {
     {q:"Principal value sin⁻¹(-1)?", options:["-π/2","π/2","0","-π"], ans:"a"},
     {q:"Principal value cos⁻¹(1)?", options:["0","π","π/2","-π/2"], ans:"a"}
   ]},
+
+  // GK (password 1508) — SAME as your file
   "1508": { title:"Indian Freedom GK", questions:[
     {q:"First PM of India?", options:["Jawaharlal Nehru","Gandhi","Sardar Patel","Lal Bahadur"], ans:"a"},
     {q:"Year of Independence?", options:["1947","1950","1942","1930"], ans:"a"},
@@ -152,115 +185,178 @@ const BANK = {
     {q:"Executed at Lahore?", options:["Bhagat Singh","Gandhi","Nehru","Patel"], ans:"a"},
     {q:"Leader Home Rule League?", options:["Tilak","Gandhi","Nehru","Patel"], ans:"a"},
     {q:"Presided over Lahore Congress 1929?", options:["Jawaharlal Nehru","Tilak","Gandhi","Azad"], ans:"a"}
-  ]},
-  "300": { title:"Integration by Substitution", questions:[
-    {q:"∫2x cos(x²) dx=?", options:["sin(x²)+C","-sin(x²)+C","cos(x²)+C","-cos(x²)+C"], ans:"a"},
-    {q:"∫ dx/(x ln x)?", options:["ln|ln x|+C","1/ln x +C","ln|x|+C","x ln x+C"], ans:"a"},
-    {q:"∫ x e^(x²) dx?", options:["1/2 e^(x²)+C","e^(x²)+C","ln(e^(x²))+C","1/x e^(x²)+C"], ans:"a"},
-    {q:"∫ 1/(1+x²) dx?", options:["arctan x +C","arcsin x +C","arccos x +C","ln x +C"], ans:"a"},
-    {q:"∫ sin(3x) dx?", options:["-1/3 cos3x+C","1/3 cos3x+C","1/3 sin3x+C","-1/3 sin3x+C"], ans:"a"},
-    {q:"∫ cos(5x) dx?", options:["1/5 sin5x+C","-1/5 sin5x+C","cos5x+C","-cos5x+C"], ans:"a"},
-    {q:"∫ 3x² dx?", options:["x³+C","3x²+C","x³/3+C","3x+C"], ans:"a"},
-    {q:"∫ e^(2x) dx?", options:["1/2 e^(2x)+C","e^(2x)+C","2 e^(2x)+C","ln e^(2x)+C"], ans:"a"},
-    {q:"∫ dx/√x?", options:["2√x+C","√x+C","1/√x +C","ln x +C"], ans:"a"},
-    {q:"∫ dx/(x√(ln x))?", options:["2√ln x +C","√ln x+C","1/√ln x +C","ln ln x+C"], ans:"a"},
-    {q:"∫ tan x dx?", options:["-ln|cosx|+C","ln|cosx|+C","ln|sinx|+C","-ln|sinx|+C"], ans:"a"},
-    {q:"∫ cot x dx?", options:["ln|sinx|+C","-ln|sinx|+C","ln|cosx|+C","-ln|cosx|+C"], ans:"a"},
-    {q:"∫ sec² x dx?", options:["tan x +C","cot x +C","sec x +C","csc x +C"], ans:"a"},
-    {q:"∫ csc² x dx?", options:["-cot x +C","tan x +C","csc x +C","sec x +C"], ans:"a"},
-    {q:"∫ dx/(x²+1)?", options:["arctan x +C","arcsin x +C","arccos x +C","ln x +C"], ans:"a"},
-    {q:"∫ e^(x²) * 2x dx?", options:["e^(x²)+C","1/2 e^(x²)+C","ln e^(x²)+C","2 e^(x²)+C"], ans:"a"},
-    {q:"∫ sin²x dx?", options:["x/2 - sin2x/4 +C","x/2 + sin2x/4 +C","-x/2 + sin2x/4 +C","x+ C"], ans:"a"},
-    {q:"∫ cos²x dx?", options:["x/2 + sin2x/4 +C","x/2 - sin2x/4 +C","-x/2 + sin2x/4 +C","x+ C"], ans:"a"},
-    {q:"∫ dx/√(1−x²)?", options:["arcsin x +C","arccos x +C","arctan x +C","ln x +C"], ans:"a"},
-    {q:"∫ dx/(1−x²)?", options:["1/2 ln|(1+x)/(1−x)| +C","ln|(1+x)/(1−x)| +C","arctan x +C","arcsin x +C"], ans:"a"}
   ]}
 };
 
-let selectedQuiz = null, studentName="", currentQ=0, score=0, answers=[], timerInterval;
+// ====== STATE ======
+let selectedQuiz = null, studentName="", currentQ=0, score=0, answers=[], timerInterval=null, preStartInterval=null, questionList=[];
 
-function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+// ====== HELPERS ======
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+// ====== FLOW ======
 function onPasswordEnter(){
-  const pwd=document.getElementById("accessPwd").value;
-  if(pwd==="100" || pwd==="200" || pwd==="1508" || pwd==="300"){
-    selectedQuiz=BANK[pwd]; document.getElementById("passwordScreen").style.display="none";
+  const pwd=document.getElementById("accessPwd").value.trim();
+  if(BANK[pwd]){
+    selectedQuiz=BANK[pwd];
+    document.getElementById("passwordScreen").style.display="none";
     document.getElementById("nameScreen").style.display="block";
-  } else if(pwd==="9110"){document.getElementById("passwordScreen").style.display="none";
-    document.getElementById("adminScreen").style.display="block"; loadAdmin();}
-  else{alert("Invalid password");}
+  } else if(pwd==="9110"){
+    document.getElementById("passwordScreen").style.display="none";
+    document.getElementById("adminScreen").style.display="block";
+    loadAdmin();
+  } else {
+    alert("Invalid password");
+  }
 }
+
 function startQuiz(){
   studentName=document.getElementById("studentName").value.trim();
-  if(!studentName){alert("Enter name"); return;}
+  if(!studentName){ alert("Enter name"); return; }
   document.getElementById("nameScreen").style.display="none";
   document.getElementById("quizScreen").style.display="block";
-  currentQ=0; score=0; answers=[]; showQuestion(); startTimer();
+
+  currentQ=0; score=0; answers=[]; questionList = shuffle(selectedQuiz.questions.slice()); // randomize question order
+
+  // Time lock ONLY for Sets (150)
+  if(selectedQuiz===BANK["150"]){
+    handleSetsTiming();
+  } else {
+    showQuestion();
+    hideOrShowNext(true);
+    document.getElementById("timer").innerText=""; // no timer for other quizzes
+  }
 }
+
+function hideOrShowNext(show){
+  document.getElementById("nextBtn").style.display = show?"inline-block":"none";
+}
+
+function handleSetsTiming(){
+  // Before start — show countdown and hide question/next
+  const now = new Date();
+  if(now < SETS_START){
+    document.getElementById("questionBox").innerHTML = "";
+    hideOrShowNext(false);
+    updatePreStartCountdown();
+    preStartInterval = setInterval(updatePreStartCountdown, 1000);
+  } else if(now >= SETS_START && now < SETS_END){
+    // Window open — start showing questions and countdown to end
+    showQuestion();
+    hideOrShowNext(true);
+    runCountdownToEnd();
+  } else {
+    // Already ended
+    document.getElementById("timer").innerText = "Test ended";
+    finishQuiz();
+  }
+}
+
+function updatePreStartCountdown(){
+  const now = new Date();
+  const diff = SETS_START - now;
+  if(diff <= 0){
+    clearInterval(preStartInterval);
+    showQuestion();
+    hideOrShowNext(true);
+    runCountdownToEnd();
+    return;
+  }
+  const m = Math.floor(diff/1000/60);
+  const s = Math.floor((diff/1000)%60);
+  document.getElementById("timer").innerText = `Test not started yet — unlocks in ${m}m ${s}s`;
+}
+
+function runCountdownToEnd(){
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    const diff = SETS_END - new Date();
+    if(diff <= 0){
+      clearInterval(timerInterval);
+      document.getElementById("timer").innerText = "Time's up!";
+      finishQuiz(); // auto-submit at end time
+    } else {
+      const m=Math.floor(diff/1000/60);
+      const s=Math.floor((diff/1000)%60);
+      document.getElementById("timer").innerText = `Time left: ${m}m ${s}s`;
+    }
+  },1000);
+}
+
 function showQuestion(){
-  if(currentQ>=selectedQuiz.questions.length){finishQuiz(); return;}
-  let q=selectedQuiz.questions[currentQ];
-  let opts=shuffle(q.options.slice());
-  let html=`<fieldset><legend>Q${currentQ+1}: ${q.q}</legend>`;
-  opts.forEach((o,i)=>{html+=`<label class="option"><input type="radio" name="opt" value="${o}">${o}</label>`;});
-  html+="</fieldset>"; document.getElementById("questionBox").innerHTML=html;
+  if(currentQ>=questionList.length){ finishQuiz(); return; }
+  const q = questionList[currentQ];
+  const opts = shuffle(q.options.slice()); // randomize options each time
+  let html = `<fieldset><legend>Q${currentQ+1}: ${q.q}</legend>`;
+  opts.forEach(o=>{ html += `<label class="option"><input type="radio" name="opt" value="${o}">${o}</label>`; });
+  html += `</fieldset>`;
+  document.getElementById("questionBox").innerHTML = html;
 }
+
 function onNext(){
-  let sel=document.querySelector('input[name="opt"]:checked');
-  if(!sel){alert("Select option"); return;}
+  const sel=document.querySelector('input[name="opt"]:checked');
+  if(!sel){ alert("Select option"); return; }
   answers.push(sel.value);
-  let correct=selectedQuiz.questions[currentQ].options[selectedQuiz.questions[currentQ].ans.charCodeAt(0)-97];
+  const q = questionList[currentQ];
+  const correct = q.options[q.ans.charCodeAt(0)-97];
   if(sel.value===correct) score++;
   currentQ++; showQuestion();
 }
+
 function finishQuiz(){
-  clearInterval(timerInterval);
+  clearInterval(timerInterval); clearInterval(preStartInterval);
   document.getElementById("questionBox").style.display="none";
-  document.getElementById("nextBtn").style.display="none";
-  let summary="", qlist=selectedQuiz.questions;
+  hideOrShowNext(false);
+
+  const qlist = questionList.length? questionList : (selectedQuiz? selectedQuiz.questions: []);
+  let summary = "";
   for(let i=0;i<qlist.length;i++){
-    let correct=qlist[i].options[qlist[i].ans.charCodeAt(0)-97];
-    summary+=`Q${i+1}: ${qlist[i].q}\nYour answer: ${answers[i]} => ${answers[i]===correct ? "Correct":"Wrong"}\nCorrect: ${correct}\n\n`;
+    const correct = qlist[i].options[qlist[i].ans.charCodeAt(0)-97];
+    const yourAns = (i<answers.length)? answers[i] : "(no answer)";
+    summary += `Q${i+1}: ${qlist[i].q}\nYour answer: ${yourAns} => ${yourAns===correct ? "Correct" : "Wrong"}\nCorrect: ${correct}\n\n`;
   }
-  document.getElementById("studentInfo").innerText=`Name: ${studentName}\nQuiz: ${selectedQuiz.title}`;
-  document.getElementById("scoreInfo").innerText=`Score: ${score} / ${qlist.length}`;
-  document.getElementById("summary").innerText=summary;
-  document.getElementById("resultCard").style.display="block";
+  document.getElementById("studentInfo").innerText = `Name: ${studentName}\nQuiz: ${selectedQuiz? selectedQuiz.title: ''}`;
+  document.getElementById("scoreInfo").innerText = `Score: ${score} / ${qlist.length}`;
+  document.getElementById("summary").innerText = summary;
+  document.getElementById("resultCard").style.display = "block";
   saveToSheet();
 }
-function startTimer(){
-  let total=600; //10 minutes
-  timerInterval=setInterval(()=>{let m=Math.floor(total/60), s=total%60;
-    document.getElementById("timer").innerText=`Time left: ${m}m ${s}s`; total--; if(total<0){clearInterval(timerInterval); finishQuiz();}},1000);
-}
-function printResult(){window.print();}
 
-// Local storage admin
+function printResult(){ window.print(); }
+
+// ====== STORAGE / ADMIN ======
 function saveToSheet(){
   const date=new Date().toLocaleString();
-  let data={Name:studentName,QuizCode:selectedQuiz.title,Score:score,Date:date};
+  const quizTitle = selectedQuiz? selectedQuiz.title : "";
+  const data={Name:studentName,Quiz:quizTitle,Score:score,Date:date};
   let stored=JSON.parse(localStorage.getItem("quizResults")||"[]"); stored.push(data);
   localStorage.setItem("quizResults",JSON.stringify(stored));
-  //Send to Google Sheet
-  fetch(SERVER_WEBAPP_URL+"?name="+encodeURIComponent(studentName)+"&quiz="+encodeURIComponent(selectedQuiz.title)+"&score="+score+"&date="+encodeURIComponent(date))
-  .then(r=>console.log("Saved to sheet")).catch(e=>console.log("Sheet save failed",e));
+  // Send to Google Sheet
+  fetch(SERVER_WEBAPP_URL+"?"+
+        "name="+encodeURIComponent(studentName)+
+        "&quiz="+encodeURIComponent(quizTitle)+
+        "&score="+encodeURIComponent(score)+
+        "&date="+encodeURIComponent(date))
+    .then(()=>console.log("Saved to sheet"))
+    .catch(e=>console.log("Sheet save failed",e));
 }
 
 function loadAdmin(){
   document.getElementById("openSheetBtn").href=GOOGLE_SHEET_URL;
-  let stored=JSON.parse(localStorage.getItem("quizResults")||"[]"); 
-  let tbody=""; stored.forEach(r=>{tbody+=`<tr><td>${r.Name}</td><td>${r.QuizCode}</td><td>${r.Score}</td><td>${r.Date}</td></tr>`;});
-  document.getElementById("adminTable").innerHTML=tbody;
+  let stored=JSON.parse(localStorage.getItem("quizResults")||"[]");
+  let tbody=""; stored.forEach(r=>{ tbody += `<tr><td>${r.Name}</td><td>${r.Quiz}</td><td>${r.Score}</td><td>${r.Date}</td></tr>`; });
+  document.getElementById("adminTable").innerHTML = tbody;
 }
 
 function downloadLocalCSV(){
   let stored=JSON.parse(localStorage.getItem("quizResults")||"[]");
-  if(!stored.length){alert("No data"); return;}
+  if(!stored.length){ alert("No data"); return; }
   let csv="Name,Quiz,Score,Date\n";
-  stored.forEach(r=>{csv+=`${r.Name},${r.QuizCode},${r.Score},${r.Date}\n`;});
+  stored.forEach(r=>{ csv += `${r.Name},${r.Quiz},${r.Score},${r.Date}\n`; });
   let a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv); a.download="quiz_results.csv"; a.click();
 }
 
-function clearLocalResults(){if(confirm("Clear local data?")){localStorage.removeItem("quizResults"); loadAdmin();}}
+function clearLocalResults(){ if(confirm("Clear local data?")){ localStorage.removeItem("quizResults"); loadAdmin(); } }
 </script>
 </body>
 </html>
